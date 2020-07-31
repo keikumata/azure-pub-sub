@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	servicebus "github.com/Azure/azure-service-bus-go"
 )
@@ -11,6 +12,10 @@ import (
 const (
 	defaultSubscriptionName = "default"
 )
+
+type Deferable interface {
+	Wait() time.Duration
+}
 
 // Handle is a func to handle the message received from a subscription
 type Handle func(ctx context.Context, message, messageType string) error
@@ -133,6 +138,12 @@ func (l *Listener) Listen(ctx context.Context, handle Handle, topicName string, 
 			if val, ok := message.UserProperties["type"]; ok {
 				err := handle(ctx, string(message.Data), val.(string))
 				if err != nil {
+					d, deferable := val.(Deferable)
+					if deferable {
+						//there is also actual defer method on message that takes no input.
+						//no idea if that's a better alternative
+						message.ScheduleAt(time.Now().Add(d.Wait()))
+					}
 					err = message.Abandon(ctx)
 					return err
 				}

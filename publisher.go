@@ -111,7 +111,7 @@ func SetMessageDelay(delay time.Duration) PublishOption {
 func SetMessageID(messageID string) PublishOption {
 	return func(msg *servicebus.Message) error {
 		if msg == nil {
-			return errors.New("cannot assign message ID")
+			return errors.New("message is nil. cannot assign message ID")
 		}
 		msg.ID = messageID
 		return nil
@@ -122,7 +122,7 @@ func SetMessageID(messageID string) PublishOption {
 func SetCorrelationID(correlationID string) PublishOption {
 	return func(msg *servicebus.Message) error {
 		if msg == nil {
-			return errors.New("cannot assign message ID")
+			return errors.New("message is nil. cannot assign correlation ID")
 		}
 		msg.CorrelationID = correlationID
 		return nil

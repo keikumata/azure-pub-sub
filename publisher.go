@@ -100,7 +100,7 @@ func SetDuplicateDetection(window *time.Duration) PublisherManagementOption {
 func SetMessageDelay(delay time.Duration) PublishOption {
 	return func(msg *servicebus.Message) error {
 		if msg == nil {
-			return errors.New("cannot assign message delay")
+			return errors.New("message is nil. cannot assign message delay")
 		}
 		msg.ScheduleAt(time.Now().Add(delay))
 		return nil

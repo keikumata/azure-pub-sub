@@ -14,6 +14,14 @@ const (
 	defaultSubscriptionName = "default"
 )
 
+// DeferMessageError is an error type to indicate a message is to be deferred
+type DeferMessageError struct{}
+
+// Error converts the error into a string
+func (dfe *DeferMessageError) Error() string {
+	return ""
+}
+
 // Handle is a func to handle the message received from a subscription
 type Handle func(ctx context.Context, message, messageType string) error
 
@@ -175,15 +183,18 @@ func (l *Listener) Listen(ctx context.Context, handle Handle, topicName string, 
 			if val, ok := message.UserProperties["type"]; ok {
 				err := handle(ctx, string(message.Data), val.(string))
 				if err != nil {
-					err = message.Abandon(ctx)
-					return err
+					_, ok := err.(*DeferMessageError)
+					if ok {
+						return message.Defer(ctx)
+					}
+					return message.Abandon(ctx)
 				}
 				return message.Complete(ctx)
-			} else {
-				// TODO(keikumata): when logging is setup log a warning here
-				// type field in the service bus message's UserProperties should not be empty
-				return message.Abandon(ctx)
 			}
+
+			// TODO(keikumata): when logging is setup log a warning here
+			// type field in the service bus message's UserProperties should not be empty
+			return message.Abandon(ctx)
 		},
 	))
 	l.listenerHandle = listenerHandle

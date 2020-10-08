@@ -8,6 +8,7 @@ import (
 	"time"
 
 	servicebus "github.com/Azure/azure-service-bus-go"
+	"github.com/keikumata/azure-pub-sub/handle"
 	"github.com/keikumata/azure-pub-sub/internal/reflection"
 	"github.com/keikumata/azure-pub-sub/internal/test"
 	"github.com/stretchr/testify/suite"
@@ -279,17 +280,18 @@ func (suite *serviceBusSuite) publishAndReceiveMessage(testConfig publishReceive
 	suite.NoError(err)
 }
 
-func checkResultHandler(publishedMsg string, publishedMsgType string, ch chan<- bool) Handle {
-	return func(ctx context.Context, message string, messageType string) error {
-		if publishedMsg != message {
-			ch <- false
-			return errors.New("published message and received message are different")
-		}
-		if publishedMsgType != messageType {
-			ch <- false
-			return errors.New("published message type and received message type are different")
-		}
-		ch <- true
-		return nil
-	}
+func checkResultHandler(publishedMsg string, publishedMsgType string, ch chan<- bool) handle.Handler {
+	return handle.Handle(
+		func(ctx context.Context, message string, messageType string) handle.Handler {
+			if publishedMsg != message {
+				ch <- false
+				return handle.Error(errors.New("published message and received message are different"))
+			}
+			if publishedMsgType != messageType {
+				ch <- false
+				return handle.Error(errors.New("published message type and received message type are different"))
+			}
+			ch <- true
+			return handle.Complete()
+		})
 }

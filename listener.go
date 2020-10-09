@@ -87,13 +87,7 @@ func ListenerWithManagedIdentityResourceID(serviceBusNamespaceName, managedIdent
 // SetSubscriptionName configures the subscription name of the subscription to listen to
 func SetSubscriptionName(name string) ListenerOption {
 	return func(l *Listener) error {
-		ctx := context.Background()
 		l.subscriptionName = name
-		subscriptionEntity, err := getSubscriptionEntity(ctx, name, l.namespace, l.topicEntity)
-		if err != nil {
-			return fmt.Errorf("failed to get subscription: %w", err)
-		}
-		l.subscriptionEntity = subscriptionEntity
 		return nil
 	}
 }

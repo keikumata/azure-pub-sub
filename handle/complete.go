@@ -6,6 +6,7 @@ import (
 	servicebus "github.com/Azure/azure-service-bus-go"
 )
 
+// Complete marks the successful processing of a message. It removes the message from the processing topic.
 func Complete() Handler {
 	return &complete{}
 }

@@ -8,6 +8,7 @@ import (
 
 var doneHandlerInstance = &doneHandler{}
 
+// IsDone returns true and terminates processing if the handler is doneHandlerInstance.
 func IsDone(handler Handler) bool {
 	return handler == doneHandlerInstance
 }

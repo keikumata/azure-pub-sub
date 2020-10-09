@@ -2,6 +2,7 @@ package handle
 
 import (
 	"context"
+	"fmt"
 
 	servicebus "github.com/Azure/azure-service-bus-go"
 )
@@ -10,12 +11,12 @@ import (
 type Handle func(ctx context.Context, message, messageType string) Handler
 
 func (h Handle) Do(ctx context.Context, _ Handler, message *servicebus.Message) Handler {
-	val, ok := message.UserProperties["type"]
+	messageType, ok := message.UserProperties["type"]
 	// we require the message to have a type set on user properties
 	if !ok {
-		return Abandon()
+		return Error(fmt.Errorf("message did not include a type in UserProperties"))
 	}
-	return h(ctx, string(message.Data), val.(string))
+	return h(ctx, string(message.Data), messageType.(string))
 }
 
 type Handler interface {

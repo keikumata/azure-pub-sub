@@ -116,12 +116,6 @@ func createTestHandler() message.HandleFunc {
 	}
 }
 
-func createTestRertryHandler() message.HandleFunc {
-	return func(ctx context.Context, message *message.Message) message.Handler {
-		return message.RetryLater(1 * time.Second)
-	}
-}
-
 func contextCanceledError(err error) bool {
 	return strings.Contains(err.Error(), "context deadline exceeded") ||
 		strings.Contains(err.Error(), "context canceled")

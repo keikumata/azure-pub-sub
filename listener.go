@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	servicebus "github.com/Azure/azure-service-bus-go"
-	"github.com/keikumata/azure-pub-sub/handle"
+	"github.com/keikumata/azure-pub-sub/message"
 
 	servicebusinternal "github.com/keikumata/azure-pub-sub/internal/servicebus"
 )
@@ -167,7 +167,7 @@ func setSubscriptionFilters(ctx context.Context, l *Listener) error {
 }
 
 // Listen waits for a message from the Service Bus Topic subscription
-func (l *Listener) Listen(ctx context.Context, handler handle.Handler, topicName string, opts ...ListenerOption) error {
+func (l *Listener) Listen(ctx context.Context, handler message.Handler, topicName string, opts ...ListenerOption) error {
 	l.topicName = topicName
 	// apply listener options
 	for _, opt := range opts {
@@ -206,13 +206,13 @@ func (l *Listener) Listen(ctx context.Context, handler handle.Handler, topicName
 
 	// Create a handle class that has that function
 	listenerHandle := subReceiver.Listen(ctx, servicebus.HandlerFunc(
-		func(ctx context.Context, message *servicebus.Message) error {
+		func(ctx context.Context, msg *servicebus.Message) error {
 			originalHandler := handler
-			for !handle.IsDone(handler) {
-				handler = handler.Do(ctx, originalHandler, message)
+			for !message.IsDone(handler) {
+				handler = handler.Do(ctx, originalHandler, msg)
 				// handle nil as a Completion!
 				if handler == nil {
-					handler = handle.Complete()
+					handler = message.Complete()
 				}
 			}
 			return nil

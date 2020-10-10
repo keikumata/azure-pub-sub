@@ -1,4 +1,4 @@
-package handle
+package message
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	servicebus "github.com/Azure/azure-service-bus-go"
 )
 
-// Complete marks the successful processing of a message. It removes the message from the processing topic.
+// Complete will notify Azure Service Bus that the message was successfully handled and should be deleted from the queue
 func Complete() Handler {
 	return &complete{}
 }

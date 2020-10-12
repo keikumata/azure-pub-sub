@@ -10,16 +10,19 @@ Specifically this is what the message should look like:
 
 ```json
 {
-  data: '<some data>',
-  userProperties: {
-     type: '<name of the struct type>' // used for subscription filters
+  "data": "<some data>",
+  "userProperties": {
+     "type": "<name of the struct type>" // used for subscription filters
   }
 }
 ```
+
 This is enforced by the fact that the listener handler's function signature expects the messageType to be there:
+
 ```golang
 type Handle func(ctx context.Context, *message.Message message) message.Handler
 ```
+
 If the `type` field from `userProperties` is missing, the listener handler will automatically throw an error saying it is not supported.
 
 In the future we will support raw listener handlers that don't have this restriction to allow for more publisher flexibility.
@@ -58,19 +61,31 @@ defer listener.Close(context.Background(()) // stop receiving messages
 #### The Handler
 The `Handler` is a func that takes in a context and the message, and returns another `Handler` type, represents the result of the handling.
 
-ex:
 ```golang
 handler := message.HandlerFunc(func(ctx context.Context, msg *message.Message) message.Handler {
     err := DoSomething(ctx, msg)
     if err != nil {
         return msg.Error(err) //trace the error, and abandon the message. message will be retried
     }
-    message.Complete() // handling successful. remove message from topic
+    msg.Complete() // handling successful. remove message from topic
 })
 
 // listen blocks and handle messages from the topic
 err := listener.Listen(ctx, handler, topicName)
 ```
+##### Postponed handling of message
+In some cases, your message handler can detect that it is not ready to process the message, and needs to retry later: 
+```golang
+handler := message.HandlerFunc(func(ctx context.Context, msg *message.Message) message.Handler {
+    return msg.RetryLater(10*time.Minute)
+})
+
+// listen blocks and handle messages from the topic
+err := listener.Listen(ctx, handler, topicName)
+```
+
+Note that this happens in-memory in your service. The receiver is keeping your message and pushing it back to your handler after the given time.
+This will not increase the retry count of the message, as the message is not dequeued another time.
 
 #### Start Listening
 ```golang

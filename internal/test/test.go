@@ -48,7 +48,7 @@ func init() {
 
 // SetupSuite prepares the test suite and provisions a standard Service Bus Namespace
 func (suite *BaseSuite) SetupSuite() {
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load("../.env"); err != nil {
 		suite.T().Log(err)
 	}
 
@@ -57,7 +57,6 @@ func (suite *BaseSuite) SetupSuite() {
 		if v == "" {
 			suite.FailNowf("missing environment variable", "%q required for integration tests.", key)
 		}
-
 		*target = v
 	}
 
@@ -77,13 +76,13 @@ func (suite *BaseSuite) SetupSuite() {
 		suite.FailNowf("connection string could not be parsed", "Connection String: %q", suite.ConnStr)
 	}
 	suite.Namespace = parsed.Namespace
-	suite.Token = suite.servicePrincipalToken()
+	// suite.Token = suite.servicePrincipalToken()
 	suite.Environment = azure.PublicCloud
-	suite.TagID = randomString("tag", 10)
+	suite.TagID = randomString("tag", 5)
 
-	if !suite.NoError(suite.ensureProvisioned(sbmgmt.SkuTierStandard)) {
-		suite.FailNow("failed to ensure provisioned")
-	}
+	// if !suite.NoError(suite.ensureProvisioned(sbmgmt.SkuTierStandard)) {
+	// 	suite.FailNow("failed to ensure provisioned")
+	// }
 }
 
 // TearDownSuite destroys created resources during the run of the suite. In particular it deletes the topics that were created

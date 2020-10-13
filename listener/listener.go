@@ -1,10 +1,11 @@
-package pubsub
+package listener
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
+	"github.com/Azure/azure-amqp-common-go/v3/auth"
 	servicebus "github.com/Azure/azure-service-bus-go"
 	"github.com/keikumata/azure-pub-sub/message"
 
@@ -16,7 +17,6 @@ const (
 )
 
 // Listener is a struct to contain service bus entities relevant to subscribing to a publisher topic
-// deprecated: use listener pacakge instead
 type Listener struct {
 	namespace          *servicebus.Namespace
 	topicEntity        *servicebus.TopicEntity
@@ -42,19 +42,19 @@ func (l *Listener) Namespace() *servicebus.Namespace {
 	return l.namespace
 }
 
-// ListenerManagementOption provides structure for configuring a new Listener
-type ListenerManagementOption func(l *Listener) error
+// ManagementOption provides structure for configuring a new Listener
+type ManagementOption func(l *Listener) error
 
-// ListenerOption provides structure for configuring when starting to listen to a specified topic
-type ListenerOption func(l *Listener) error
+// Option provides structure for configuring when starting to listen to a specified topic
+type Option func(l *Listener) error
 
-// ListenerWithConnectionString configures a listener with the information provided in a Service Bus connection string
-func ListenerWithConnectionString(connStr string) ListenerManagementOption {
+// WithConnectionString configures a listener with the information provided in a Service Bus connection string
+func WithConnectionString(connStr string) ManagementOption {
 	return func(l *Listener) error {
 		if connStr == "" {
 			return errors.New("no Service Bus connection string provided")
 		}
-		ns, err := getNamespace(servicebus.NamespaceWithConnectionString(connStr))
+		ns, err := servicebus.NewNamespace(servicebus.NamespaceWithConnectionString(connStr))
 		if err != nil {
 			return err
 		}
@@ -63,18 +63,13 @@ func ListenerWithConnectionString(connStr string) ListenerManagementOption {
 	}
 }
 
-// Deprecated use ListenerWithManagedIdentityClientID instead
-func WithManagedIdentity(serviceBusNamespaceName, managedIdentityClientID string) ListenerManagementOption {
-	return ListenerWithManagedIdentityClientID(serviceBusNamespaceName, managedIdentityClientID)
-}
-
-// ListenerWithManagedIdentityClientID configures a listener with the attached managed identity and the Service bus resource name
-func ListenerWithManagedIdentityClientID(serviceBusNamespaceName, managedIdentityClientID string) ListenerManagementOption {
+// WithManagedIdentityClientID configures a listener with the attached managed identity and the Service bus resource name
+func WithManagedIdentityClientID(serviceBusNamespaceName, managedIdentityClientID string) ManagementOption {
 	return func(l *Listener) error {
 		if serviceBusNamespaceName == "" {
 			return errors.New("no Service Bus namespace provided")
 		}
-		ns, err := getNamespace(servicebusinternal.NamespaceWithManagedIdentityClientID(serviceBusNamespaceName, managedIdentityClientID))
+		ns, err := servicebus.NewNamespace(servicebusinternal.NamespaceWithManagedIdentityClientID(serviceBusNamespaceName, managedIdentityClientID))
 		if err != nil {
 			return err
 		}
@@ -83,13 +78,27 @@ func ListenerWithManagedIdentityClientID(serviceBusNamespaceName, managedIdentit
 	}
 }
 
-// ListenerWithManagedIdentityResourceID configures a listener with the attached managed identity and the Service bus resource name
-func ListenerWithManagedIdentityResourceID(serviceBusNamespaceName, managedIdentityResourceID string) ListenerManagementOption {
+func WithTokenProvider(serviceBusNamespaceName string, tokenProvider auth.TokenProvider) ManagementOption {
+	return func(l *Listener) error {
+		if tokenProvider == nil {
+			return errors.New("cannot provide a nil token provider")
+		}
+		ns, err := servicebus.NewNamespace(servicebusinternal.NamespaceWithTokenProvider(serviceBusNamespaceName, tokenProvider))
+		if err != nil {
+			return err
+		}
+		l.namespace = ns
+		return nil
+	}
+}
+
+// WithManagedIdentityResourceID configures a listener with the attached managed identity and the Service bus resource name
+func WithManagedIdentityResourceID(serviceBusNamespaceName, managedIdentityResourceID string) ManagementOption {
 	return func(l *Listener) error {
 		if serviceBusNamespaceName == "" {
 			return errors.New("no Service Bus namespace provided")
 		}
-		ns, err := getNamespace(servicebusinternal.NamespaceWithManagedIdentityResourceID(serviceBusNamespaceName, managedIdentityResourceID))
+		ns, err := servicebus.NewNamespace(servicebusinternal.NamespaceWithManagedIdentityResourceID(serviceBusNamespaceName, managedIdentityResourceID))
 		if err != nil {
 			return err
 		}
@@ -98,32 +107,21 @@ func ListenerWithManagedIdentityResourceID(serviceBusNamespaceName, managedIdent
 	}
 }
 
-// SetSubscriptionName configures the subscription name of the subscription to listen to
-// Deprecated: set the subscription name on Listener creation instead
-func WithSubscriptionName(name string) ListenerManagementOption {
+// WithSubscriptionName configures the subscription name of the subscription to listen to
+func WithSubscriptionName(name string) ManagementOption {
 	return func(l *Listener) error {
 		l.subscriptionName = name
 		return nil
 	}
 }
 
-// SetSubscriptionName configures the subscription name of the subscription to listen to
-// Deprecated: set the subscription name on Listener creation instead
-func WithFilterDescriber(filterName string, filter servicebus.FilterDescriber) ListenerManagementOption {
+// WithFilterDescriber configures the filters on the subscription
+func WithFilterDescriber(filterName string, filter servicebus.FilterDescriber) ManagementOption {
 	return func(l *Listener) error {
 		if len(filterName) == 0 || filter == nil {
 			return errors.New("filter name or filter cannot be zero value")
 		}
 		l.filterDefinitions = append(l.filterDefinitions, &filterDefinition{filterName, filter})
-		return nil
-	}
-}
-
-// SetSubscriptionName configures the subscription name of the subscription to listen to
-// Deprecated: set the subscription name on Listener creation instead, using WithSubscriptionName
-func SetSubscriptionName(name string) ListenerOption {
-	return func(l *Listener) error {
-		l.subscriptionName = name
 		return nil
 	}
 }
@@ -133,21 +131,8 @@ type filterDefinition struct {
 	Filter servicebus.FilterDescriber
 }
 
-// SetSubscriptionFilter configures a filter of the subscription to listen to
-// Deprecated. use WithFilterDescriber on listener creation
-func SetSubscriptionFilter(filterName string, filter servicebus.FilterDescriber) ListenerOption {
-	return func(l *Listener) error {
-		if len(filterName) == 0 || filter == nil {
-			return errors.New("filter name or filter cannot be zero value")
-		}
-		l.filterDefinitions = append(l.filterDefinitions, &filterDefinition{filterName, filter})
-		return nil
-	}
-}
-
-// NewListener creates a new service bus listener
-// deprecated: use listener.New(opts ...listener.ManagementOption)
-func NewListener(opts ...ListenerManagementOption) (*Listener, error) {
+// New creates a new service bus listener
+func New(opts ...ManagementOption) (*Listener, error) {
 	ns, err := servicebus.NewNamespace()
 	if err != nil {
 		return nil, err
@@ -210,7 +195,7 @@ func setSubscriptionFilters(ctx context.Context, l *Listener) error {
 }
 
 // Listen waits for a message from the Service Bus Topic subscription
-func (l *Listener) Listen(ctx context.Context, handler message.Handler, topicName string, opts ...ListenerOption) error {
+func (l *Listener) Listen(ctx context.Context, handler message.Handler, topicName string, opts ...Option) error {
 	l.topicName = topicName
 	// apply listener options
 	for _, opt := range opts {
@@ -279,14 +264,6 @@ func (l *Listener) Close(ctx context.Context) error {
 		return fmt.Errorf("error shutting down service bus subscription. %w", err)
 	}
 	return nil
-}
-
-func getNamespace(option servicebus.NamespaceOption) (*servicebus.Namespace, error) {
-	namespace, err := servicebus.NewNamespace(option)
-	if err != nil {
-		return nil, fmt.Errorf("creating service bus namespace failed: %w", err)
-	}
-	return namespace, nil
 }
 
 func getTopicEntity(ctx context.Context, topicName string, namespace *servicebus.Namespace) (*servicebus.TopicEntity, error) {

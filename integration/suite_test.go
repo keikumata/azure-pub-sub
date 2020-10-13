@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keikumata/azure-pub-sub/internal/aad"
 	"github.com/keikumata/azure-pub-sub/internal/test"
 	"github.com/keikumata/azure-pub-sub/listener"
 	"github.com/keikumata/azure-pub-sub/publisher"
@@ -35,8 +36,9 @@ type testEvent struct {
 }
 
 const (
-	defaultTimeout = 60 * time.Second
-	testTopicName  = "testTopic"
+	defaultTimeout        = 60 * time.Second
+	testTopicName         = "testTopic"
+	serviceBusResourceURI = "https://servicebus.azure.net/"
 )
 
 func TestConnectionString(t *testing.T) {
@@ -97,8 +99,13 @@ func withEnvManagedIdentityClientID() listener.ManagementOption {
 	if managedIdentityClientID == "" {
 		panic("environment variable MANAGED_IDENTITY_CLIENT_ID was not set")
 	}
-
-	return listener.WithManagedIdentityClientID(serviceBusNamespaceName, managedIdentityClientID)
+	provider, err := aad.NewJWTProvider(
+		aad.JWTProviderWithManagedIdentityClientID(managedIdentityClientID, ""),
+		aad.JWTProviderWithResourceURI(serviceBusResourceURI))
+	if err != nil {
+		panic(err.Error())
+	}
+	return listener.WithTokenProvider(serviceBusNamespaceName, provider)
 }
 
 func withEnvManagedIdentityResourceID() listener.ManagementOption {
@@ -112,7 +119,14 @@ func withEnvManagedIdentityResourceID() listener.ManagementOption {
 	if managedIdentityResourceID == "" {
 		panic("environment variable MANAGED_IDENTITY_RESOURCE_ID was not set")
 	}
-	return listener.WithManagedIdentityResourceID(serviceBusNamespaceName, managedIdentityResourceID)
+
+	provider, err := aad.NewJWTProvider(
+		aad.JWTProviderWithManagedIdentityResourceID(managedIdentityResourceID, ""),
+		aad.JWTProviderWithResourceURI(serviceBusResourceURI))
+	if err != nil {
+		panic(err.Error())
+	}
+	return listener.WithTokenProvider(serviceBusNamespaceName, provider)
 }
 
 func withPublisherEnvManagedIdentityClientID() publisher.ManagementOption {
@@ -127,7 +141,13 @@ func withPublisherEnvManagedIdentityClientID() publisher.ManagementOption {
 		panic("environment variable MANAGED_IDENTITY_CLIENT_ID was not set")
 	}
 
-	return publisher.WithManagedIdentityClientID(serviceBusNamespaceName, managedIdentityClientID)
+	provider, err := aad.NewJWTProvider(
+		aad.JWTProviderWithManagedIdentityClientID(managedIdentityClientID, ""),
+		aad.JWTProviderWithResourceURI(serviceBusResourceURI))
+	if err != nil {
+		panic(err.Error())
+	}
+	return publisher.WithTokenProvider(serviceBusNamespaceName, provider)
 }
 
 func withPublisherEnvManagedIdentityResourceID() publisher.ManagementOption {
@@ -142,7 +162,13 @@ func withPublisherEnvManagedIdentityResourceID() publisher.ManagementOption {
 		panic("environment variable MANAGED_IDENTITY_RESOURCE_ID was not set")
 	}
 
-	return publisher.WithManagedIdentityResourceID(serviceBusNamespaceName, managedIdentityResourceID)
+	provider, err := aad.NewJWTProvider(
+		aad.JWTProviderWithManagedIdentityResourceID(managedIdentityResourceID, ""),
+		aad.JWTProviderWithResourceURI(serviceBusResourceURI))
+	if err != nil {
+		panic(err.Error())
+	}
+	return publisher.WithTokenProvider(serviceBusNamespaceName, provider)
 }
 
 func (suite *serviceBusSuite) SetupSuite() {

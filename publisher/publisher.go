@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Azure/azure-amqp-common-go/v3/auth"
 	servicebus "github.com/Azure/azure-service-bus-go"
 	"github.com/keikumata/azure-pub-sub/internal/reflection"
 	servicebusinternal "github.com/keikumata/azure-pub-sub/internal/servicebus"
@@ -67,6 +68,20 @@ func WithManagedIdentityClientID(serviceBusNamespaceName, managedIdentityClientI
 			return errors.New("no Service Bus namespace provided")
 		}
 		ns, err := servicebus.NewNamespace(servicebusinternal.NamespaceWithManagedIdentityClientID(serviceBusNamespaceName, managedIdentityClientID))
+		if err != nil {
+			return err
+		}
+		p.namespace = ns
+		return nil
+	}
+}
+
+func WithTokenProvider(serviceBusNamespaceName string, tokenProvider auth.TokenProvider) ManagementOption {
+	return func(p *Publisher) error {
+		if tokenProvider == nil {
+			return errors.New("cannot provide a nil token provider")
+		}
+		ns, err := servicebus.NewNamespace(servicebusinternal.NamespaceWithTokenProvider(serviceBusNamespaceName, tokenProvider))
 		if err != nil {
 			return err
 		}

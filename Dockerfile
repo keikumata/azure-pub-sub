@@ -1,4 +1,4 @@
-FROM golang
+FROM golang:1.14
 WORKDIR pubsub
 COPY . .
 RUN touch .env

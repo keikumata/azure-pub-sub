@@ -8,6 +8,7 @@ import (
 
 // TestCreatePublisherWithNewTopic tests the creation of a publisher for a new topic
 func (suite *serviceBusSuite) TestCreatePublisherUsingNewTopic() {
+	suite.T().Parallel()
 	topicName := "newTopic" + suite.TagID
 	_, err := publisher.New(topicName, suite.publisherAuthOption)
 	if suite.NoError(err) {

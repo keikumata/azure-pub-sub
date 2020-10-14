@@ -41,6 +41,7 @@ func (suite *serviceBusSuite) TestPublishAndListenUsingTypeFilter() {
 
 // TestPublishAndListenUsingCustomHeaderFilter tests both the publisher and listener with a customer filter
 func (suite *serviceBusSuite) TestPublishAndListenUsingCustomHeaderFilter() {
+	suite.T().Parallel()
 	// this assumes that the testTopic was created at the start of the test suite
 	pub, err := publisher.New(
 		suite.TopicName,
@@ -62,6 +63,7 @@ func (suite *serviceBusSuite) TestPublishAndListenUsingCustomHeaderFilter() {
 
 // TestPublishAndListenWithConnectionStringUsingDuplicateDetection tests both the publisher and listener with duplicate detection
 func (suite *serviceBusSuite) TestPublishAndListenUsingDuplicateDetection() {
+	suite.T().Parallel()
 	// creating a separate topic that was not created at the beginning of the test suite
 	// note that this topic will also be deleted at the tear down of the suite due to the tagID at the end of the topic name
 	dupeDetectionTopicName := suite.Prefix + "deduptopic" + suite.TagID
@@ -77,6 +79,7 @@ func (suite *serviceBusSuite) TestPublishAndListenUsingDuplicateDetection() {
 }
 
 func (suite *serviceBusSuite) TestPublishAndListenRetryLater() {
+	suite.T().Parallel()
 	// creating a separate topic that was not created at the beginning of the test suite
 	// note that this topic will also be deleted at the tear down of the suite due to the tagID at the end of the topic name
 	retryLaterTopic := suite.Prefix + "retrylater" + suite.TagID

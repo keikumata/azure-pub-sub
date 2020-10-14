@@ -9,10 +9,7 @@ import (
 	"time"
 
 	"github.com/Azure/azure-amqp-common-go/v3/conn"
-	rm "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2017-05-10/resources"
-	sbmgmt "github.com/Azure/azure-sdk-for-go/services/servicebus/mgmt/2017-04-01/servicebus"
 	servicebus "github.com/Azure/azure-service-bus-go"
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/joho/godotenv"
@@ -79,10 +76,6 @@ func (suite *BaseSuite) SetupSuite() {
 	// suite.Token = suite.servicePrincipalToken()
 	suite.Environment = azure.PublicCloud
 	suite.TagID = randomString("tag", 5)
-
-	// if !suite.NoError(suite.ensureProvisioned(sbmgmt.SkuTierStandard)) {
-	// 	suite.FailNow("failed to ensure provisioned")
-	// }
 }
 
 // TearDownSuite destroys created resources during the run of the suite. In particular it deletes the topics that were created
@@ -124,63 +117,6 @@ func (suite *BaseSuite) GetNewNamespace(opts ...servicebus.NamespaceOption) *ser
 	return ns
 }
 
-func (suite *BaseSuite) servicePrincipalToken() *adal.ServicePrincipalToken {
-	oauthConfig, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, suite.TenantID)
-	if err != nil {
-		suite.T().Fatal(err)
-	}
-
-	tokenProvider, err := adal.NewServicePrincipalToken(*oauthConfig,
-		suite.ClientID,
-		suite.ClientSecret,
-		azure.PublicCloud.ResourceManagerEndpoint)
-	if err != nil {
-		suite.T().Fatal(err)
-	}
-
-	return tokenProvider
-}
-
-func (suite *BaseSuite) getRmGroupClient() *rm.GroupsClient {
-	groupsClient := rm.NewGroupsClient(suite.SubscriptionID)
-	groupsClient.Authorizer = autorest.NewBearerAuthorizer(suite.Token)
-	return &groupsClient
-}
-
-func (suite *BaseSuite) getNamespaceClient() *sbmgmt.NamespacesClient {
-	nsClient := sbmgmt.NewNamespacesClient(suite.SubscriptionID)
-	nsClient.Authorizer = autorest.NewBearerAuthorizer(suite.Token)
-	return &nsClient
-}
-
-func (suite *BaseSuite) ensureProvisioned(tier sbmgmt.SkuTier) error {
-	groupsClient := suite.getRmGroupClient()
-	_, err := groupsClient.CreateOrUpdate(context.Background(), suite.ResourceGroup, rm.Group{Location: &suite.Location})
-	if err != nil {
-		return err
-	}
-
-	nsClient := suite.getNamespaceClient()
-	_, err = nsClient.Get(context.Background(), suite.ResourceGroup, suite.Namespace)
-	if err != nil {
-		ns := sbmgmt.SBNamespace{
-			Sku: &sbmgmt.SBSku{
-				Name: sbmgmt.SkuName(tier),
-				Tier: tier,
-			},
-			Location: &suite.Location,
-		}
-		res, err := nsClient.CreateOrUpdate(context.Background(), suite.ResourceGroup, suite.Namespace, ns)
-		if err != nil {
-			return err
-		}
-
-		return res.WaitForCompletionRef(context.Background(), nsClient.Client)
-	}
-
-	return nil
-}
-
 // EnsureTopic checks if the topic exists and creates one if it doesn't
 func (suite *BaseSuite) EnsureTopic(ctx context.Context, name string) (*servicebus.TopicEntity, error) {
 	ns := suite.GetNewNamespace()
@@ -192,11 +128,6 @@ func (suite *BaseSuite) EnsureTopic(ctx context.Context, name string) (*serviceb
 	}
 
 	return tm.Put(ctx, name)
-}
-
-// randomString generates a random Event Hub name tagged with the suite id
-func (suite *BaseSuite) randomName(prefix string, length int) string {
-	return randomString(prefix, length) + "-" + suite.TagID
 }
 
 // randomString generates a random string with prefix

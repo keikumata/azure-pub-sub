@@ -137,9 +137,6 @@ func withPublisherEnvManagedIdentityClientID() publisher.ManagementOption {
 
 	// if managedIdentityClientID is empty then library will assume system assigned managed identity
 	managedIdentityClientID := os.Getenv("MANAGED_IDENTITY_CLIENT_ID")
-	if managedIdentityClientID == "" {
-		panic("environment variable MANAGED_IDENTITY_CLIENT_ID was not set")
-	}
 
 	provider, err := aad.NewJWTProvider(
 		aad.JWTProviderWithManagedIdentityClientID(managedIdentityClientID, ""),
@@ -156,7 +153,6 @@ func withPublisherEnvManagedIdentityResourceID() publisher.ManagementOption {
 		panic("environment variable SERVICEBUS_NAMESPACE_NAME was not set")
 	}
 
-	// if managedIdentityClientID is empty then library will assume system assigned managed identity
 	managedIdentityResourceID := os.Getenv("MANAGED_IDENTITY_RESOURCE_ID")
 	if managedIdentityResourceID == "" {
 		panic("environment variable MANAGED_IDENTITY_RESOURCE_ID was not set")

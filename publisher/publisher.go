@@ -9,7 +9,7 @@ import (
 
 	servicebus "github.com/Azure/azure-service-bus-go"
 	"github.com/Azure/go-autorest/autorest/adal"
-	"github.com/keikumata/azure-pub-sub/auth"
+	"github.com/keikumata/azure-pub-sub/internal/aad"
 	"github.com/keikumata/azure-pub-sub/internal/reflection"
 	servicebusinternal "github.com/keikumata/azure-pub-sub/internal/servicebus"
 )
@@ -82,7 +82,7 @@ func WithToken(serviceBusNamespaceName string, spt *adal.ServicePrincipalToken) 
 		if spt == nil {
 			return errors.New("cannot provide a nil token")
 		}
-		ns, err := servicebus.NewNamespace(servicebusinternal.NamespaceWithTokenProvider(serviceBusNamespaceName, auth.AsJWTTokenProvider(spt)))
+		ns, err := servicebus.NewNamespace(servicebusinternal.NamespaceWithTokenProvider(serviceBusNamespaceName, aad.AsJWTTokenProvider(spt)))
 		if err != nil {
 			return err
 		}

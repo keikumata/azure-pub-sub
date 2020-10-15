@@ -78,7 +78,7 @@ func WithManagedIdentityClientID(serviceBusNamespaceName, managedIdentityClientI
 }
 
 func WithToken(serviceBusNamespaceName string, spt *adal.ServicePrincipalToken) ManagementOption {
-	return func(l *Publisher) error {
+	return func(p *Publisher) error {
 		if spt == nil {
 			return errors.New("cannot provide a nil token")
 		}
@@ -86,7 +86,7 @@ func WithToken(serviceBusNamespaceName string, spt *adal.ServicePrincipalToken) 
 		if err != nil {
 			return err
 		}
-		l.namespace = ns
+		p.namespace = ns
 		return nil
 	}
 }

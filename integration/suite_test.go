@@ -133,7 +133,7 @@ func adalToken(id string, getToken withSpecificIdFunc) (*adal.ServicePrincipalTo
 		return nil, err
 	}
 	logrefresh := func(t adal.Token) error {
-		fmt.Printf("refreshing token %+v", t)
+		fmt.Printf("refreshing token: %s", t.Expires())
 		return nil
 	}
 	spt, err := getToken(msiEndpoint, serviceBusResourceURI, id, logrefresh)
